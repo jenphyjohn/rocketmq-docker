@@ -1,32 +1,13 @@
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+FROM registry.cn-beijing.aliyuncs.com/jenphyjohn/alpine-java8
 
-FROM openjdk:8-alpine
-
-RUN apk add --no-cache bash gettext nmap-ncat openssl busybox-extras
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories;\
+    apk update && apk upgrade && apk add --no-cache bash gettext nmap-ncat openssl
 
 ARG user=rocketmq
 ARG group=rocketmq
 ARG uid=3000
 ARG gid=3000
 
-# RocketMQ is run with user `rocketmq`, uid = 3000
-# If you bind mount a volume from the host or a data container,
-# ensure you use the same uid
 RUN addgroup --gid ${gid} ${group} \
     && adduser --uid ${uid} -G ${group} ${user} -s /bin/bash -D
 
@@ -43,17 +24,10 @@ WORKDIR  ${ROCKETMQ_HOME}
 # Install
 RUN set -eux; \
     apk add --virtual .build-deps curl gnupg unzip; \
-    curl https://archive.apache.org/dist/rocketmq/${ROCKETMQ_VERSION}/rocketmq-all-${ROCKETMQ_VERSION}-bin-release.zip -o rocketmq.zip; \
-    curl https://archive.apache.org/dist/rocketmq/${ROCKETMQ_VERSION}/rocketmq-all-${ROCKETMQ_VERSION}-bin-release.zip.asc -o rocketmq.zip.asc; \
-    #https://www.apache.org/dist/rocketmq/KEYS
-	curl https://www.apache.org/dist/rocketmq/KEYS -o KEYS; \
-	\
-	gpg --import KEYS; \
-    gpg --batch --verify rocketmq.zip.asc rocketmq.zip; \
+    curl https://mirrors.tuna.tsinghua.edu.cn/apache/rocketmq/${ROCKETMQ_VERSION}/rocketmq-all-${ROCKETMQ_VERSION}-bin-release.zip -o rocketmq.zip; \
     unzip rocketmq.zip; \
 	mv rocketmq-all*/* . ; \
 	rmdir rocketmq-all* ; \
-	rm rocketmq.zip rocketmq.zip.asc KEYS; \
 	apk del .build-deps ; \
     rm -rf /var/cache/apk/* ; \
     rm -rf /tmp/*
@@ -78,6 +52,16 @@ EXPOSE 10909 10911 10912
 RUN mv ${ROCKETMQ_HOME}/bin/runbroker-customize.sh ${ROCKETMQ_HOME}/bin/runbroker.sh \
  && chmod a+x ${ROCKETMQ_HOME}/bin/runbroker.sh \
  && chmod a+x ${ROCKETMQ_HOME}/bin/mqbroker
+
+# Make ln
+RUN ln -s ${ROCKETMQ_HOME}/bin/mqadmin /usr/local/bin/mqadmin  \
+    && ln -s ${ROCKETMQ_HOME}/bin/runbroker /usr/local/bin/runbroker \
+    && ln -s ${ROCKETMQ_HOME}/bin/mqnamesrv /usr/local/bin/mqnamesrv \
+    && ln -s ${ROCKETMQ_HOME}/bin/mqbroker /usr/local/bin/mqbroker \
+    && ln -s ${ROCKETMQ_HOME}/bin/runbroker.sh /usr/local/bin/runbroker.sh \
+    && ln -s ${ROCKETMQ_HOME}/bin/runserver.sh /usr/local/bin/runserver.sh \
+    && ln -s ${ROCKETMQ_HOME}/bin/runbroker.sh /usr/local/bin/runbroker-customize.sh \
+    && ln -s ${ROCKETMQ_HOME}/bin/runserver.sh /usr/local/bin/runserver-customize.sh
 
 # Export Java options
 RUN export JAVA_OPT=" -Duser.home=/opt"
