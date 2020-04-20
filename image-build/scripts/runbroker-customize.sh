@@ -24,25 +24,7 @@ error_exit ()
     exit 1
 }
 
-find_java_home()
-{
-    case "`uname`" in
-        Darwin)
-            JAVA_HOME=$(/usr/libexec/java_home)
-        ;;
-        *)
-            JAVA_HOME=$(dirname $(dirname $(readlink -f $(which javac))))
-        ;;
-    esac
-}
-
-find_java_home
-
 JAVA_HOME=/opt/jdk
-
-[ ! -e "$JAVA_HOME/bin/java" ] && JAVA_HOME=$HOME/jdk/java
-[ ! -e "$JAVA_HOME/bin/java" ] && JAVA_HOME=/usr/java
-[ ! -e "$JAVA_HOME/bin/java" ] && error_exit "Please set the JAVA_HOME variable in your environment, We need java(x64)!"
 
 export JAVA_HOME
 export JAVA="$JAVA_HOME/bin/java"
@@ -132,6 +114,12 @@ Xmx=$MAX_HEAP_SIZE
 Xmn=$HEAP_NEWSIZE
 MaxDirectMemorySize=$MAX_HEAP_SIZE
 # Set for `JAVA_OPT`.
+#if [ -n "$JAVA_OPT_EXT" ]
+#then 
+#    JAVA_OPT="${JAVA_OPT} ${JAVA_OPT_EXT}"
+#else
+#    JAVA_OPT="${JAVA_OPT} -server -Xms${Xms} -Xmx${Xmx} -Xmn${Xmn}"
+#fi
 JAVA_OPT="${JAVA_OPT} -server -Xms${Xms} -Xmx${Xmx} -Xmn${Xmn}"
 JAVA_OPT="${JAVA_OPT} -XX:+UseG1GC -XX:G1HeapRegionSize=16m -XX:G1ReservePercent=25 -XX:InitiatingHeapOccupancyPercent=30 -XX:SoftRefLRUPolicyMSPerMB=0 -XX:SurvivorRatio=8"
 JAVA_OPT="${JAVA_OPT} -verbose:gc -Xloggc:/dev/shm/mq_gc_%p.log -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime -XX:+PrintAdaptiveSizePolicy"
